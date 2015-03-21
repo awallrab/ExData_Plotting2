@@ -1,0 +1,23 @@
+### plot6.R
+library(dplyr)
+
+# read the data
+NEI <- readRDS("summarySCC_PM25.rds")
+SCC <- readRDS("Source_Classification_Code.rds")
+
+# filter for baltimore motor vehicles
+ba_and_la <- filter(NEI, fips == "24510" | fips == "06037")
+vehicles <- filter(SCC, grepl("vehicle", Short.Name, ignore.case = TRUE))
+ba_and_la_vehicles <- filter(ba_and_la, SCC %in% vehicles$SCC)
+
+# sum up emmissions
+agg_emissions <- aggregate(Emissions~year+fips, ba_and_la_vehicles, sum)
+agg_emissions <- mutate(agg_emissions, District = fips)
+agg_emissions[agg_emissions$District == "24510", ]$District <- "Baltimore City"
+agg_emissions[agg_emissions$District == "06037", ]$District <- "Los Angeles County"
+
+# create plot
+library(ggplot2)
+qplot(data=agg_emissions, year, Emissions, color=District, geom="path", xlab="Year", ylab="PM25 Emissions (in tons)", main = "Total Motor Vehicle PM25 Emissions (Baltimore & LA County)")
+dev.copy(png, file="plot6.png", width=480, height=480)
+dev.off()
